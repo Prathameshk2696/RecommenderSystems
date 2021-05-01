@@ -10,51 +10,48 @@ from tabulate import tabulate
 
 class CollaborativeFiltering:
     
-    def __init__(self,approach = 'knn',movie_data):
+    """Collaborative filtering system using KNN as well as SVD"""
+    
+    def __init__(self,approach = 'knn',movie_data = None):
         
         self.user_id = None
         self.name = 'Collaborative Based Filtering'
         self.approach = approach
-        self.number_of_collaborators = None
+        self.number_of_neighbors = None
         self.number_movie_recommendations = None
         self.user_ratings_df = movie_data['user_ratings_df']
         self.movie_attributes_df = movie_data['movie_attributes_df']
         self.movie_titles_df = movie_data['movie_titles_df']
-        
+        self.get_input()
     
-    def get_input():
-        self.user_id = int(input('Enter User ID: '))
-        self.number_of_collaborators = int(input('Enter User ID: '))
+    def get_input(self):
+        self.user_id = int(input('Enter User ID : '))
+        self.number_of_neighbors = int(input('Enter number of neighbors : '))
         self.number_movie_recommendations = self.number_movie_recommendations = int(input('Enter number of movies to be recommended : '))
         
-    def find_distance(item_1,item_2):
+    def find_distance(self,item_1,item_2):
         distance = np.linalg.norm(item_1-item_2)
         return distance
     
     def compute_distance_with_all_users(self):
-        
-        distance_user={}
+        distance_user = {}
         rating_of_user = self.user_ratings_df.iloc[self.user_id]
         specific_user_ratings = rating_of_user.to_numpy()
         
         for row in self.user_ratings_df.iterrows():
             if(row[0]!=self.user_id):
-                distance_user[row[0]]=(find_distance(row[1].to_numpy(),specific_user_ratings),row[1].to_numpy())
+                distance_user[row[0]]=(self.find_distance(row[1].to_numpy(),specific_user_ratings),row[1].to_numpy())
         return distance_user
     
     def compute_kNearest_users(self,distance_dict):
-        top_k_collaborators = dict(sorted(distance_dict.items(), key=lambda x:x[1][0])[:self.number_of_collaborators])
-        return top_k_collaborators
-    
+        top_k_neighbors = dict(sorted(distance_dict.items(), key=lambda x:x[1][0])[:self.number_of_neighbors])
+        return top_k_neighbors
     
     def compute_weighted_movie_rating(self,neighbors):
-    
         sum_distance=0
         movie_ratings=0
         sum_distance=0
-        
-        watched = np.where(self.user_ratings_df.iloc[userid]>0,0,1)
-        
+        watched = np.where(self.user_ratings_df.iloc[self.user_id]>0,0,1)
         for k,v in neighbors.items():
             
             sum_distance+=v[0]
@@ -65,28 +62,28 @@ class CollaborativeFiltering:
         
         return movie_ratings*watched
         
-    def get_topk_recommendations(self):
+    def get_topk_recommendations(self,weighted_movie_ratings):
           
-        top_k_recommendations = self.movie_attributes_df.argsort()[-self.number_movie_recommendations:][::-1]
+        top_k_recommendations = weighted_movie_ratings.argsort()[-self.number_movie_recommendations:][::-1]
         return top_k_recommendations
     
     def recommend(self):
         
-        distance_user = self.compute_distance_with_all_users(self)
+        distance_user = self.compute_distance_with_all_users()
         
-        k_collaborators = self.compute_kNearest_users(self,distance_user)
+        k_neighbors = self.compute_kNearest_users(distance_user)
         
-        weighted_movie_ratings = self.compute_weighted_movie_rating(self,k_users)
+        weighted_movie_ratings = self.compute_weighted_movie_rating(k_neighbors)
         
-        top_k_movies = self.get_topk_recommendations(self,weighted_movie_ratings)
-       
+        top_k_movies = self.get_topk_recommendations(weighted_movie_ratings)
+        print(top_k_movies)
         headers = ['Movie Id','Movie Name','Year']
         table = []
         for movie_id in top_k_movies:
-            table.append([movie_id,self.movie_titles_df.loc[movie_id,'title'],self.movie_titles_df.loc[movie_id,'year']])
+            if movie_id in self.movie_titles_df.index:
+                table.append([movie_id,self.movie_titles_df.loc[movie_id,'title'],self.movie_titles_df.loc[movie_id,'year']])
         print(tabulate(table,headers,tablefmt='grid'))
         
-      
 class ContentBasedFiltering:
     
     def __init__(self,movie_data):
@@ -114,6 +111,7 @@ class ContentBasedFiltering:
         watched_movie_ids = self.user_ratings_df.loc[self.user_id,self.user_ratings_df.loc[self.user_id].notnull()].index
         dist_df = self.compute_similarity(watched_movie_ids)
         recommended_movie_ids = list(dist_df.min(axis=1).nsmallest(self.number_movie_recommendations).index)
+        print(recommended_movie_ids)
         headers = ['Movie Id','Movie Name','Year']
         table = []
         for movie_id in recommended_movie_ids:

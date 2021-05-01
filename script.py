@@ -20,7 +20,8 @@ if __name__ == '__main__':
     recommender_name = int(input(message))
     
     if recommender_name in {1,2}:
-        rs = CollaborativeFiltering(movie_data)
+        approach = 'knn' if recommender_name == 1 else 'svd'
+        rs = CollaborativeFiltering(approach, movie_data)
     elif recommender_name == 3:
         rs = ContentBasedFiltering(movie_data)
     
