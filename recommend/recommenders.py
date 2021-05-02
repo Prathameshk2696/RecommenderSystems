@@ -64,7 +64,7 @@ class CollaborativeFiltering:
         
     def get_topk_recommendations(self,weighted_movie_ratings):
           
-        top_k_recommendations = weighted_movie_ratings.argsort()[-self.number_movie_recommendations:][::-1]
+        top_k_recommendations = self.user_ratings_df.columns.values[weighted_movie_ratings.argsort()[-self.number_movie_recommendations:][::-1]]
         return top_k_recommendations
     
     def recommend(self):
@@ -104,19 +104,22 @@ class ContentBasedFiltering:
         dist_df = pd.DataFrame(index=unwatched_movie_ids,columns=watched_movie_ids)
         unwatched_movie_attributes_df = self.movie_attributes_df.loc[unwatched_movie_ids]
         for movie_id in watched_movie_ids:
+            print(movie_id)
             dist_df.loc[:,movie_id] = (((unwatched_movie_attributes_df - self.movie_attributes_df.loc[movie_id,:])**2).sum(axis=1))**0.5
         return dist_df
         
     def recommend(self):
-        watched_movie_ids = self.user_ratings_df.loc[self.user_id,self.user_ratings_df.loc[self.user_id].notnull()].index
+        watched_movie_ids = self.user_ratings_df.loc[self.user_id,self.user_ratings_df.loc[self.user_id]!=0].index
+        print(1)
         dist_df = self.compute_similarity(watched_movie_ids)
+        print(2)
         recommended_movie_ids = list(dist_df.min(axis=1).nsmallest(self.number_movie_recommendations).index)
-        print(recommended_movie_ids)
         headers = ['Movie Id','Movie Name','Year']
         table = []
         for movie_id in recommended_movie_ids:
             table.append([movie_id,self.movie_titles_df.loc[movie_id,'title'],self.movie_titles_df.loc[movie_id,'year']])
         print(tabulate(table,headers,tablefmt='grid'))
+        return dist_df
         
         
         
